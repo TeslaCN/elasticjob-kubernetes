@@ -1,0 +1,8 @@
+apiVersion: icu.wwj.elasticjob/v1alpha1
+kind: ElasticJob
+metadata:
+  name: hello-job
+  namespace: elasticjob-cloud
+spec:
+  shardingCount: 3
+  cron: * * * * ?
