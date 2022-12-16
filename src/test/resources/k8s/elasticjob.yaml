@@ -4,5 +4,24 @@ metadata:
   name: hello-job
   namespace: elasticjob-cloud
 spec:
-  shardingCount: 3
-  cron: * * * * ?
+  template:
+    metadata:
+      labels:
+        app: elasticjob
+    spec:
+      containers:
+        - name: job-container
+          image: teslacn/hello-job
+  jobExecutionType: TRANSIENT
+  shardingTotalCount: 3
+  shardingItemParameters: 
+    1: a
+    2: b
+    3: c
+  cron: '* * * * ?'
+  misfire: true
+  description: ''
+  props:
+    a: b
+  disabled: false
+  
