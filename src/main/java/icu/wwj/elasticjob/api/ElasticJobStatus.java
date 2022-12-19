@@ -8,5 +8,7 @@ import lombok.Setter;
 @Setter
 public class ElasticJobStatus extends ObservedGenerationAwareStatus {
     
+    private String status;
+    
     private long lastFireTime;
 }

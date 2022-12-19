@@ -11,7 +11,10 @@ spec:
     spec:
       containers:
         - name: job-container
-          image: teslacn/hello-job
+          image: hello-job
+          command:
+            - echo
+            - hi
   jobExecutionType: TRANSIENT
   shardingTotalCount: 3
   shardingItemParameters: 
