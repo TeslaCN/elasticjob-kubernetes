@@ -9,9 +9,11 @@ spec:
       labels:
         app: elasticjob
     spec:
+      restartPolicy: OnFailure
       containers:
         - name: job-container
-          image: hello-job
+          imagePullPolicy: IfNotPresent
+          image: alpine:3.17
           command:
             - echo
             - hi

@@ -1,5 +1,7 @@
 package icu.wwj.elasticjob;
 
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.javaoperatorsdk.operator.Operator;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -11,8 +13,9 @@ public class ElasticJobOperator {
     }
     
     public static void main(String[] args) {
-        Operator operator = new Operator();
-        operator.register(new ElasticJobReconciler());
+        KubernetesClient client = new KubernetesClientBuilder().build();
+        Operator operator = new Operator(client);
+        operator.register(new ElasticJobReconciler(client));
         operator.start();
     }
 }
