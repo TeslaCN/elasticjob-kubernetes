@@ -22,7 +22,8 @@ spec:
   shardingItemParameters: 
     1: a
     2: b
-    3: c
+    0: c
+  jobParameter: 'common parameter'
   cron: '* * * * ?'
   misfire: true
   description: ''

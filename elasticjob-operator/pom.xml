@@ -12,6 +12,12 @@
     
     <dependencies>
         <dependency>
+            <groupId>org.apache.shardingsphere.elasticjob</groupId>
+            <artifactId>elasticjob-api</artifactId>
+            <version>${elasticjob.version}</version>
+        </dependency>
+        
+        <dependency>
             <groupId>io.javaoperatorsdk</groupId>
             <artifactId>operator-framework</artifactId>
             <version>4.1.2</version>
