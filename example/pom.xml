@@ -9,4 +9,41 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>example</artifactId>
+    
+    <dependencies>
+        <dependency>
+            <groupId>icu.wwj.elasticjob</groupId>
+            <artifactId>elasticjob-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <from>
+                        <image>eclipse-temurin:17-jdk</image>
+                    </from>
+                    <to>
+                        <image>teslacn/elasticjob-kubernetes-example</image>
+                    </to>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
