@@ -5,8 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import icu.wwj.elasticjob.api.ElasticJob;
 import icu.wwj.elasticjob.api.ElasticJobStatus;
 import icu.wwj.elasticjob.api.JobExecutionType;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFileBuilder;
+import io.fabric8.kubernetes.api.model.DownwardAPIVolumeSourceBuilder;
+import io.fabric8.kubernetes.api.model.ObjectFieldSelectorBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobSpecBuilder;
@@ -27,6 +33,7 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEven
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.elasticjob.api.JobConfiguration;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 
 import java.util.Map;
@@ -41,7 +48,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     
     private static final String ELASTICJOB_ANNOTATION_PREFIX = "icu.wwj.elasticjob/";
     
-    private static final String ELASTICJOB_SHARDING_CONTEXT_PREFIX = "job-sharding-context-";
+    private static final String ELASTICJOB_SHARDING_CONTEXT_PREFIX = "sharding-context-";
     
     private final KubernetesClient kubernetesClient;
     
@@ -97,11 +104,30 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     private PodTemplateSpec getDecoratedPodTemplate(ElasticJob elasticJob) {
         ObjectMapper objectMapper = new ObjectMapper();
         PodTemplateSpec copiedTemplate = objectMapper.readValue(objectMapper.writeValueAsString(elasticJob.getSpec().getTemplate()), PodTemplateSpec.class);
+        JobConfiguration jobConfiguration = toJobConfiguration(elasticJob);
+        copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(jobConfiguration));
         for (int shardingItem = 0; shardingItem < elasticJob.getSpec().getShardingTotalCount(); shardingItem++) {
             ShardingContext shardingContext = new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, ""));
             copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem, objectMapper.writeValueAsString(shardingContext));
         }
+        copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")
+                .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
+                        .withItems(new DownwardAPIVolumeFileBuilder()
+                                .withPath("annotations")
+                                .withFieldRef(new ObjectFieldSelectorBuilder()
+                                        .withFieldPath("metadata.annotations")
+                                        .build())
+                                .build())
+                        .build())
+                .build());
+        for (Container each : copiedTemplate.getSpec().getContainers()) {
+            each.getVolumeMounts().add(new VolumeMountBuilder().withName("elasticjob").withMountPath("/etc/elasticjob").build());
+        }
         return copiedTemplate;
+    }
+    
+    private JobConfiguration toJobConfiguration(final ElasticJob elasticJob) {
+        return JobConfiguration.newBuilder(elasticJob.getMetadata().getName(), elasticJob.getSpec().getShardingTotalCount()).build();
     }
     
     @Override
