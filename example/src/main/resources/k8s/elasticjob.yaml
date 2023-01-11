@@ -13,10 +13,7 @@ spec:
       containers:
         - name: job-container
           imagePullPolicy: IfNotPresent
-          image: alpine:3.17
-          command:
-            - echo
-            - hi
+          image: teslacn/elasticjob-kubernetes-example:latest
   jobExecutionType: TRANSIENT
   shardingTotalCount: 3
   shardingItemParameters: 

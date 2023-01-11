@@ -48,6 +48,8 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     
     private static final String ELASTICJOB_ANNOTATION_PREFIX = "icu.wwj.elasticjob/";
     
+    private static final String ELASTICJOB_ANNOTATION_CONFIG = ELASTICJOB_ANNOTATION_PREFIX + "config";
+    
     private static final String ELASTICJOB_SHARDING_CONTEXT_PREFIX = "sharding-context-";
     
     private final KubernetesClient kubernetesClient;
@@ -112,12 +114,14 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         }
         copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
-                        .withItems(new DownwardAPIVolumeFileBuilder()
-                                .withPath("annotations")
-                                .withFieldRef(new ObjectFieldSelectorBuilder()
-                                        .withFieldPath("metadata.annotations")
-                                        .build())
-                                .build())
+                        .withItems(
+                                new DownwardAPIVolumeFileBuilder().withPath("annotations").withFieldRef(
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations").build()).build(),
+                                new DownwardAPIVolumeFileBuilder().withPath("config").withFieldRef(
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_CONFIG + "']").build()).build(),
+                                new DownwardAPIVolumeFileBuilder().withPath("sharding-item").withFieldRef(
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['batch.kubernetes.io/job-completion-index']").build()).build()
+                        )
                         .build())
                 .build());
         for (Container each : copiedTemplate.getSpec().getContainers()) {
