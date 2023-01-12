@@ -41,7 +41,7 @@
                         <platforms>
                             <platform>
                                 <os>linux</os>
-                                <architecture>${image.platform}</architecture>
+                                <architecture>${image.platform.arch}</architecture>
                             </platform>
                         </platforms>
                     </from>
@@ -69,7 +69,7 @@
                 </os>
             </activation>
             <properties>
-                <image.platform>arm64</image.platform>
+                <image.platform.arch>arm64</image.platform.arch>
             </properties>
         </profile>
         <profile>
@@ -80,7 +80,7 @@
                 </os>
             </activation>
             <properties>
-                <image.platform>amd64</image.platform>
+                <image.platform.arch>amd64</image.platform.arch>
             </properties>
         </profile>
     </profiles>
