@@ -38,12 +38,50 @@
                 <configuration>
                     <from>
                         <image>eclipse-temurin:17-jdk</image>
+                        <platforms>
+                            <platform>
+                                <os>linux</os>
+                                <architecture>${image.platform}</architecture>
+                            </platform>
+                        </platforms>
                     </from>
                     <to>
                         <image>teslacn/elasticjob-kubernetes-example</image>
                     </to>
+                    <container>
+                        <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                        <jvmFlags>
+                            <jvmFlag>-Xms128m</jvmFlag>
+                            <jvmFlag>-Xmx256m</jvmFlag>
+                        </jvmFlags>
+                    </container>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <image.platform>arm64</image.platform>
+            </properties>
+        </profile>
+        <profile>
+            <id>amd64</id>
+            <activation>
+                <os>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <image.platform>amd64</image.platform>
+            </properties>
+        </profile>
+    </profiles>
 </project>
