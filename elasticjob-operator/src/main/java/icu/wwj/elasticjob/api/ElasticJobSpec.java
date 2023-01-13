@@ -38,4 +38,6 @@ public class ElasticJobSpec {
     private String description;
     
     private boolean disabled;
+    
+    private String jobErrorHandlerType;
 }

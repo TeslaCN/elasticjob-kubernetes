@@ -3,6 +3,7 @@ package icu.wwj.elasticjob;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import icu.wwj.elasticjob.api.ElasticJob;
+import icu.wwj.elasticjob.api.ElasticJobSpec;
 import icu.wwj.elasticjob.api.ElasticJobStatus;
 import icu.wwj.elasticjob.api.JobExecutionType;
 import io.fabric8.kubernetes.api.model.Container;
@@ -137,7 +138,15 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     }
     
     private JobConfiguration toJobConfiguration(final ElasticJob elasticJob) {
-        return JobConfiguration.newBuilder(elasticJob.getMetadata().getName(), elasticJob.getSpec().getShardingTotalCount()).build();
+        ElasticJobSpec spec = elasticJob.getSpec();
+        JobConfiguration.Builder builder = JobConfiguration.newBuilder(elasticJob.getMetadata().getName(), spec.getShardingTotalCount())
+                .cron(spec.getCron())
+                .jobParameter(spec.getJobParameter())
+                .shardingItemParameters(spec.getShardingItemParameters().entrySet().stream().map(entry -> entry.getKey() + entry.getValue()).collect(Collectors.joining(",")))
+                .misfire(spec.isMisfire())
+                .disabled(spec.isDisabled());
+        spec.getProps().forEach(builder::setProperty);
+        return builder.build();
     }
     
     private DownwardAPIVolumeFile mountShardingContext(int shardingItem) {
