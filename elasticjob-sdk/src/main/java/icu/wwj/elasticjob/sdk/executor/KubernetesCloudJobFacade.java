@@ -58,7 +58,6 @@ public final class KubernetesCloudJobFacade implements JobFacade {
     
     @Override
     public void clearMisfire(final Collection<Integer> shardingItems) {
-        
     }
     
     @Override
@@ -73,21 +72,17 @@ public final class KubernetesCloudJobFacade implements JobFacade {
     
     @Override
     public void beforeJobExecuted(final ShardingContexts shardingContexts) {
-        
     }
     
     @Override
     public void afterJobExecuted(final ShardingContexts shardingContexts) {
-        
     }
     
     @Override
     public void postJobExecutionEvent(final JobExecutionEvent jobExecutionEvent) {
-        
     }
     
     @Override
     public void postJobStatusTraceEvent(final String taskId, final JobStatusTraceEvent.State state, final String message) {
-        
     }
 }

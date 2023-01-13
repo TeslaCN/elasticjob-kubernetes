@@ -25,19 +25,21 @@ public class ElasticJobSpec {
     @Min(1)
     private int shardingTotalCount;
     
+    private String cron;
+    
     private Map<String, String> shardingItemParameters = new LinkedHashMap<>();
     
     private String jobParameter;
     
-    private String cron;
+    private boolean failover;
     
     private boolean misfire;
     
-    private Map<String, String> props = new LinkedHashMap<>();
+    private String jobErrorHandlerType;
     
     private String description;
     
-    private boolean disabled;
+    private Map<String, String> props = new LinkedHashMap<>();
     
-    private String jobErrorHandlerType;
+    private boolean disabled;
 }

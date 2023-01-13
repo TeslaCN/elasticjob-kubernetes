@@ -1,4 +1,4 @@
-package icu.wwj.elasticjob;
+package icu.wwj.elasticjob.reconciler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,6 +111,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         ObjectMapper objectMapper = new ObjectMapper();
         PodTemplateSpec copiedTemplate = objectMapper.readValue(objectMapper.writeValueAsString(elasticJob.getSpec().getTemplate()), PodTemplateSpec.class);
         JobConfiguration jobConfiguration = toJobConfiguration(elasticJob);
+        // TODO Use a pojo instead of JobConfiguration
         copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(jobConfiguration));
         for (int shardingItem = 0; shardingItem < elasticJob.getSpec().getShardingTotalCount(); shardingItem++) {
             ShardingContext shardingContext = new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, ""));
