@@ -6,6 +6,7 @@ import icu.wwj.elasticjob.api.ElasticJob;
 import icu.wwj.elasticjob.api.ElasticJobStatus;
 import icu.wwj.elasticjob.api.JobExecutionType;
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFile;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFileBuilder;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeSourceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectFieldSelectorBuilder;
@@ -38,6 +39,8 @@ import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @ControllerConfiguration
 @Slf4j
@@ -115,8 +118,6 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
                         .withItems(
-                                new DownwardAPIVolumeFileBuilder().withPath("annotations").withFieldRef(
-                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("config").withFieldRef(
                                         new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_CONFIG + "']").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("sharding-item").withFieldRef(
@@ -124,14 +125,24 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                         )
                         .build())
                 .build());
+        copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob-sharding-context")
+                .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
+                        .withItems(IntStream.range(0, elasticJob.getSpec().getShardingTotalCount()).mapToObj(this::mountShardingContext).collect(Collectors.toList())).build())
+                .build());
         for (Container each : copiedTemplate.getSpec().getContainers()) {
             each.getVolumeMounts().add(new VolumeMountBuilder().withName("elasticjob").withMountPath("/etc/elasticjob").build());
+            each.getVolumeMounts().add(new VolumeMountBuilder().withName("elasticjob-sharding-context").withMountPath("/etc/elasticjob/sharding-context").build());
         }
         return copiedTemplate;
     }
     
     private JobConfiguration toJobConfiguration(final ElasticJob elasticJob) {
         return JobConfiguration.newBuilder(elasticJob.getMetadata().getName(), elasticJob.getSpec().getShardingTotalCount()).build();
+    }
+    
+    private DownwardAPIVolumeFile mountShardingContext(int shardingItem) {
+        return new DownwardAPIVolumeFileBuilder().withPath(shardingItem + "").withFieldRef(new ObjectFieldSelectorBuilder()
+                .withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem + "']").build()).build();
     }
     
     @Override
