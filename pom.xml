@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     
     <modules>
+        <module>elasticjob-cloud-common</module>
         <module>elasticjob-operator</module>
         <module>elasticjob-sdk</module>
         <module>example</module>

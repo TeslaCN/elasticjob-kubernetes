@@ -12,9 +12,9 @@
     
     <dependencies>
         <dependency>
-            <groupId>org.apache.shardingsphere.elasticjob</groupId>
-            <artifactId>elasticjob-api</artifactId>
-            <version>${elasticjob.version}</version>
+            <groupId>icu.wwj.elasticjob</groupId>
+            <artifactId>elasticjob-cloud-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
         
         <dependency>

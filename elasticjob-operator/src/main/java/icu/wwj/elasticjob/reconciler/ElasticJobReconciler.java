@@ -6,6 +6,7 @@ import icu.wwj.elasticjob.api.ElasticJob;
 import icu.wwj.elasticjob.api.ElasticJobSpec;
 import icu.wwj.elasticjob.api.ElasticJobStatus;
 import icu.wwj.elasticjob.api.JobExecutionType;
+import icu.wwj.elasticjob.cloud.common.pojo.CloudJobConfigurationPOJO;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFile;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFileBuilder;
@@ -35,9 +36,9 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEven
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.elasticjob.api.JobConfiguration;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -110,9 +111,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     private PodTemplateSpec getDecoratedPodTemplate(ElasticJob elasticJob) {
         ObjectMapper objectMapper = new ObjectMapper();
         PodTemplateSpec copiedTemplate = objectMapper.readValue(objectMapper.writeValueAsString(elasticJob.getSpec().getTemplate()), PodTemplateSpec.class);
-        JobConfiguration jobConfiguration = toJobConfiguration(elasticJob);
-        // TODO Use a pojo instead of JobConfiguration
-        copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(jobConfiguration));
+        copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(toCloudJobConfigurationPOJO(elasticJob)));
         for (int shardingItem = 0; shardingItem < elasticJob.getSpec().getShardingTotalCount(); shardingItem++) {
             ShardingContext shardingContext = new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, ""));
             copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem, objectMapper.writeValueAsString(shardingContext));
@@ -138,16 +137,21 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         return copiedTemplate;
     }
     
-    private JobConfiguration toJobConfiguration(final ElasticJob elasticJob) {
+    private CloudJobConfigurationPOJO toCloudJobConfigurationPOJO(final ElasticJob elasticJob) {
         ElasticJobSpec spec = elasticJob.getSpec();
-        JobConfiguration.Builder builder = JobConfiguration.newBuilder(elasticJob.getMetadata().getName(), spec.getShardingTotalCount())
-                .cron(spec.getCron())
-                .jobParameter(spec.getJobParameter())
-                .shardingItemParameters(spec.getShardingItemParameters().entrySet().stream().map(entry -> entry.getKey() + entry.getValue()).collect(Collectors.joining(",")))
-                .misfire(spec.isMisfire())
-                .disabled(spec.isDisabled());
-        spec.getProps().forEach(builder::setProperty);
-        return builder.build();
+        CloudJobConfigurationPOJO result = new CloudJobConfigurationPOJO();
+        result.setJobName(elasticJob.getMetadata().getName());
+        result.setShardingTotalCount(spec.getShardingTotalCount());
+        result.setCron(spec.getCron());
+        result.setShardingItemParameters(spec.getShardingItemParameters());
+        result.setJobParameter(spec.getJobParameter());
+        result.setFailover(spec.isFailover());
+        result.setMisfire(spec.isMisfire());
+        result.setJobErrorHandlerType(spec.getJobErrorHandlerType());
+        result.setDescription(spec.getDescription());
+        result.setProps(new LinkedHashMap<>(spec.getProps()));
+        result.setDisabled(spec.isDisabled());
+        return result;   
     }
     
     private DownwardAPIVolumeFile mountShardingContext(int shardingItem) {

@@ -1,12 +1,12 @@
 package icu.wwj.elasticjob.sdk.executor;
 
 import com.google.common.base.Preconditions;
+import icu.wwj.elasticjob.cloud.common.pojo.CloudJobConfigurationPOJO;
 import org.apache.shardingsphere.elasticjob.api.ElasticJob;
 import org.apache.shardingsphere.elasticjob.api.JobConfiguration;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 import org.apache.shardingsphere.elasticjob.executor.ElasticJobExecutor;
 import org.apache.shardingsphere.elasticjob.infra.listener.ShardingContexts;
-import org.apache.shardingsphere.elasticjob.infra.pojo.JobConfigurationPOJO;
 import org.apache.shardingsphere.elasticjob.infra.yaml.YamlEngine;
 import org.apache.shardingsphere.elasticjob.tracing.JobTracingEventBus;
 
@@ -40,12 +40,12 @@ public final class KubernetesCloudJobExecutor {
     }
     
     private JobConfiguration loadJobConfiguration() {
-        return YamlEngine.unmarshal(readFile(CONFIG_FILE), JobConfigurationPOJO.class).toJobConfiguration();
+        return YamlEngine.unmarshal(readFile(CONFIG_FILE), CloudJobConfigurationPOJO.class).toJobConfiguration();
     }
     
     private ShardingContexts loadShardingContexts(JobConfiguration jobConfiguration) {
         int shardingItem = Integer.parseInt(readFile(SHARDING_ITEM_FILE));
-        // TODO This may failed
+        // TODO Fix the failure of unmarshal
         ShardingContext shardingContext = YamlEngine.unmarshal(readFile(SHARDING_CONTEXT_DIR + "/" + shardingItem), ShardingContext.class);
         return new ShardingContexts("", jobConfiguration.getJobName(), jobConfiguration.getShardingTotalCount(), jobConfiguration.getJobParameter(), Collections.singletonMap(shardingItem, shardingContext.getShardingParameter()));
     }

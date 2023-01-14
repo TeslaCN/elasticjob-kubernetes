@@ -8,18 +8,13 @@
         <artifactId>elasticjob-kubernetes</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>elasticjob-sdk</artifactId>
-
+    
+    <artifactId>elasticjob-cloud-common</artifactId>
+    
     <dependencies>
         <dependency>
-            <groupId>icu.wwj.elasticjob</groupId>
-            <artifactId>elasticjob-cloud-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        
-        <dependency>
             <groupId>org.apache.shardingsphere.elasticjob</groupId>
-            <artifactId>elasticjob-simple-executor</artifactId>
+            <artifactId>elasticjob-api</artifactId>
             <version>${elasticjob.version}</version>
         </dependency>
     </dependencies>
