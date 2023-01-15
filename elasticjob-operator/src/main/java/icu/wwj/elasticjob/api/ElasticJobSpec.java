@@ -3,6 +3,7 @@ package icu.wwj.elasticjob.api;
 import io.fabric8.generator.annotation.Min;
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
+import io.fabric8.kubernetes.model.annotation.PrinterColumn;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,12 +20,15 @@ public class ElasticJobSpec {
     private PodTemplateSpec template;
     
     @Required
+    @PrinterColumn(name = "JOB EXECUTION TYPE")
     private JobExecutionType jobExecutionType;
     
     @Required
     @Min(1)
+    @PrinterColumn(name = "SHARDING TOTAL COUNT")
     private int shardingTotalCount;
     
+    @PrinterColumn
     private String cron;
     
     private Map<String, String> shardingItemParameters = new LinkedHashMap<>();
@@ -41,5 +45,6 @@ public class ElasticJobSpec {
     
     private Map<String, String> props = new LinkedHashMap<>();
     
+    @PrinterColumn
     private boolean disabled;
 }

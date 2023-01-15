@@ -66,14 +66,19 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         if (JobExecutionType.TRANSIENT == elasticJob.getSpec().getJobExecutionType()) {
             if (null != elasticJob.getSpec().getCron() && !elasticJob.getSpec().getCron().isEmpty()) {
                 Optional<CronJob> cronJob = context.getSecondaryResource(CronJob.class);
-                if (cronJob.isPresent()) {
-                    // TODO Check for update
-                    return UpdateControl.noUpdate();
-                }
-                return createCronJob(elasticJob);
+                return cronJob.map(job -> update(elasticJob, job)).orElseGet(() -> createCronJob(elasticJob));
             }
         }
         throw new UnsupportedOperationException("Unsupported for now");
+    }
+    
+    private UpdateControl<ElasticJob> update(final ElasticJob elasticJob, final CronJob cronJob) {
+        // TODO Check ElasticJob changes
+        ElasticJobStatus status = new ElasticJobStatus();
+        status.setStatus(cronJob.getStatus().getActive().isEmpty() ? "Staging" : "Running");
+        status.setLastScheduleTime(cronJob.getStatus().getLastScheduleTime());
+        elasticJob.setStatus(status);
+        return UpdateControl.updateStatus(elasticJob);
     }
     
     private UpdateControl<ElasticJob> createCronJob(final ElasticJob elasticJob) {
