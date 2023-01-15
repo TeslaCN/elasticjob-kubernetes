@@ -63,9 +63,11 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     @Override
     public UpdateControl<ElasticJob> reconcile(final ElasticJob elasticJob, final Context<ElasticJob> context) {
         log.debug("Reconciling {} {}", elasticJob, context);
+        // TODO Check job execution type changes
         if (JobExecutionType.TRANSIENT == elasticJob.getSpec().getJobExecutionType()) {
             if (null != elasticJob.getSpec().getCron() && !elasticJob.getSpec().getCron().isEmpty()) {
                 Optional<CronJob> cronJob = context.getSecondaryResource(CronJob.class);
+                // TODO Check cron changes
                 return cronJob.map(job -> update(elasticJob, job)).orElseGet(() -> createCronJob(elasticJob));
             }
         }
@@ -73,7 +75,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     }
     
     private UpdateControl<ElasticJob> update(final ElasticJob elasticJob, final CronJob cronJob) {
-        // TODO Check ElasticJob changes
+        kubernetesClient.batch().v1().cronjobs().resource(toCronJob(elasticJob)).createOrReplace();
         ElasticJobStatus status = new ElasticJobStatus();
         status.setStatus(cronJob.getStatus().getActive().isEmpty() ? "Staging" : "Running");
         status.setLastScheduleTime(cronJob.getStatus().getLastScheduleTime());
