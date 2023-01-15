@@ -7,6 +7,7 @@ import icu.wwj.elasticjob.api.ElasticJobSpec;
 import icu.wwj.elasticjob.api.ElasticJobStatus;
 import icu.wwj.elasticjob.api.JobExecutionType;
 import icu.wwj.elasticjob.cloud.common.pojo.CloudJobConfigurationPOJO;
+import icu.wwj.elasticjob.cloud.common.pojo.ShardingContextPOJO;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFile;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFileBuilder;
@@ -113,7 +114,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         PodTemplateSpec copiedTemplate = objectMapper.readValue(objectMapper.writeValueAsString(elasticJob.getSpec().getTemplate()), PodTemplateSpec.class);
         copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(toCloudJobConfigurationPOJO(elasticJob)));
         for (int shardingItem = 0; shardingItem < elasticJob.getSpec().getShardingTotalCount(); shardingItem++) {
-            ShardingContext shardingContext = new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, ""));
+            ShardingContextPOJO shardingContext = new ShardingContextPOJO(new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, "")));
             copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem, objectMapper.writeValueAsString(shardingContext));
         }
         copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")

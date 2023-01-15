@@ -2,6 +2,7 @@ package icu.wwj.elasticjob.sdk.executor;
 
 import com.google.common.base.Preconditions;
 import icu.wwj.elasticjob.cloud.common.pojo.CloudJobConfigurationPOJO;
+import icu.wwj.elasticjob.cloud.common.pojo.ShardingContextPOJO;
 import org.apache.shardingsphere.elasticjob.api.ElasticJob;
 import org.apache.shardingsphere.elasticjob.api.JobConfiguration;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
@@ -45,8 +46,7 @@ public final class KubernetesCloudJobExecutor {
     
     private ShardingContexts loadShardingContexts(JobConfiguration jobConfiguration) {
         int shardingItem = Integer.parseInt(readFile(SHARDING_ITEM_FILE));
-        // TODO Fix the failure of unmarshal
-        ShardingContext shardingContext = YamlEngine.unmarshal(readFile(SHARDING_CONTEXT_DIR + "/" + shardingItem), ShardingContext.class);
+        ShardingContext shardingContext = YamlEngine.unmarshal(readFile(SHARDING_CONTEXT_DIR + "/" + shardingItem), ShardingContextPOJO.class).toShardingContext();
         return new ShardingContexts("", jobConfiguration.getJobName(), jobConfiguration.getShardingTotalCount(), jobConfiguration.getJobParameter(), Collections.singletonMap(shardingItem, shardingContext.getShardingParameter()));
     }
     
