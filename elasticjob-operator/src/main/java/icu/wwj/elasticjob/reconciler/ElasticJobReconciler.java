@@ -160,7 +160,8 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         }
         copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
-                        .withItems(
+                        .withItems(IntStream.range(0, elasticJob.getSpec().getShardingTotalCount()).mapToObj(this::mountShardingContext).collect(Collectors.toList()))
+                        .addToItems(
                                 new DownwardAPIVolumeFileBuilder().withPath("config").withFieldRef(
                                         new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_CONFIG + "']").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("sharding-item").withFieldRef(
@@ -168,13 +169,8 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                         )
                         .build())
                 .build());
-        copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob-sharding-context")
-                .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
-                        .withItems(IntStream.range(0, elasticJob.getSpec().getShardingTotalCount()).mapToObj(this::mountShardingContext).collect(Collectors.toList())).build())
-                .build());
         for (Container each : copiedTemplate.getSpec().getContainers()) {
             each.getVolumeMounts().add(new VolumeMountBuilder().withName("elasticjob").withMountPath("/etc/elasticjob").build());
-            each.getVolumeMounts().add(new VolumeMountBuilder().withName("elasticjob-sharding-context").withMountPath("/etc/elasticjob/sharding-context").build());
         }
         return copiedTemplate;
     }
@@ -197,7 +193,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     }
     
     private DownwardAPIVolumeFile mountShardingContext(int shardingItem) {
-        return new DownwardAPIVolumeFileBuilder().withPath(shardingItem + "").withFieldRef(new ObjectFieldSelectorBuilder()
+        return new DownwardAPIVolumeFileBuilder().withPath("sharding-context/" + shardingItem).withFieldRef(new ObjectFieldSelectorBuilder()
                 .withFieldPath("metadata.annotations['" + ELASTICJOB_DOMAIN + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem + "']").build()).build();
     }
     
