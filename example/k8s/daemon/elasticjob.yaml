@@ -1,7 +1,7 @@
 apiVersion: icu.wwj.elasticjob/v1alpha1
 kind: ElasticJob
 metadata:
-  name: hello-job
+  name: hello-daemon-job
   namespace: elasticjob-cloud
 spec:
   template:
@@ -9,12 +9,11 @@ spec:
       labels:
         app: elasticjob
     spec:
-      restartPolicy: OnFailure
       containers:
         - name: job-container
           imagePullPolicy: IfNotPresent
           image: teslacn/elasticjob-kubernetes-example:latest
-  jobExecutionType: TRANSIENT
+  jobExecutionType: DAEMON
   shardingTotalCount: 3
   shardingItemParameters: 
     1: a

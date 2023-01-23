@@ -1,0 +1,30 @@
+apiVersion: icu.wwj.elasticjob/v1alpha1
+kind: ElasticJob
+metadata:
+  name: hello-transient-job
+  namespace: elasticjob-cloud
+spec:
+  template:
+    metadata:
+      labels:
+        app: elasticjob
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: job-container
+          imagePullPolicy: IfNotPresent
+          image: teslacn/elasticjob-kubernetes-example:latest
+  jobExecutionType: TRANSIENT
+  shardingTotalCount: 3
+  shardingItemParameters: 
+    1: a
+    2: b
+    0: c
+  jobParameter: 'common parameter'
+  cron: '* * * * ?'
+  misfire: true
+  description: ''
+  props:
+    a: b
+  disabled: false
+  

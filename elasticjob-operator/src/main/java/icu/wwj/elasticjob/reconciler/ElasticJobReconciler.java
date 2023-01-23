@@ -12,11 +12,15 @@ import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFile;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeFileBuilder;
 import io.fabric8.kubernetes.api.model.DownwardAPIVolumeSourceBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.ObjectFieldSelectorBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
+import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
+import io.fabric8.kubernetes.api.model.apps.StatefulSetSpecBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobSpecBuilder;
@@ -39,6 +43,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,9 +57,9 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     
     private static final String ELASTICJOB_PREFIX = "elasticjob-";
     
-    private static final String ELASTICJOB_ANNOTATION_PREFIX = "icu.wwj.elasticjob/";
+    private static final String ELASTICJOB_DOMAIN = "icu.wwj.elasticjob/";
     
-    private static final String ELASTICJOB_ANNOTATION_CONFIG = ELASTICJOB_ANNOTATION_PREFIX + "config";
+    private static final String ELASTICJOB_ANNOTATION_CONFIG = ELASTICJOB_DOMAIN + "config";
     
     private static final String ELASTICJOB_SHARDING_CONTEXT_PREFIX = "sharding-context-";
     
@@ -64,12 +69,13 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     public UpdateControl<ElasticJob> reconcile(final ElasticJob elasticJob, final Context<ElasticJob> context) {
         log.debug("Reconciling {} {}", elasticJob, context);
         // TODO Check job execution type changes
-        if (JobExecutionType.TRANSIENT == elasticJob.getSpec().getJobExecutionType()) {
-            if (null != elasticJob.getSpec().getCron() && !elasticJob.getSpec().getCron().isEmpty()) {
-                Optional<CronJob> cronJob = context.getSecondaryResource(CronJob.class);
-                // TODO Check cron changes
-                return cronJob.map(job -> update(elasticJob, job)).orElseGet(() -> createCronJob(elasticJob));
-            }
+        if (JobExecutionType.DAEMON == elasticJob.getSpec().getJobExecutionType()) {
+            return createStatefulSet(elasticJob);
+        }
+        if (null != elasticJob.getSpec().getCron() && !elasticJob.getSpec().getCron().isEmpty()) {
+            Optional<CronJob> cronJob = context.getSecondaryResource(CronJob.class);
+            // TODO Check cron changes
+            return cronJob.map(job -> update(elasticJob, job)).orElseGet(() -> createCronJob(elasticJob));
         }
         throw new UnsupportedOperationException("Unsupported for now");
     }
@@ -115,14 +121,42 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         return result;
     }
     
+    private UpdateControl<ElasticJob> createStatefulSet(ElasticJob elasticJob) {
+        StatefulSet statefulSet = toStatefulSet(elasticJob);
+        kubernetesClient.apps().statefulSets().resource(statefulSet).createOrReplace();
+        ElasticJobStatus status = new ElasticJobStatus();
+        status.setStatus("Reconciled");
+        elasticJob.setStatus(status);
+        return UpdateControl.updateStatus(elasticJob);
+    }
+    
+    private StatefulSet toStatefulSet(ElasticJob elasticJob) {
+        StatefulSet result = new StatefulSetBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(ELASTICJOB_PREFIX + elasticJob.getMetadata().getName())
+                        .withNamespace(elasticJob.getMetadata().getNamespace())
+                        .withLabels(elasticJob.getMetadata().getLabels())
+                        .build())
+                .withSpec(new StatefulSetSpecBuilder()
+                        .withSelector(new LabelSelectorBuilder().withMatchLabels(
+                                Collections.singletonMap(ELASTICJOB_DOMAIN + "app", elasticJob.getMetadata().getName())).build())
+                        .withTemplate(getDecoratedPodTemplate(elasticJob))
+                        .withReplicas(elasticJob.getSpec().getShardingTotalCount())
+                        .build())
+                .build();
+        result.addOwnerReference(elasticJob);
+        return result;
+    }
+    
     @SneakyThrows(JsonProcessingException.class)
     private PodTemplateSpec getDecoratedPodTemplate(ElasticJob elasticJob) {
         ObjectMapper objectMapper = new ObjectMapper();
         PodTemplateSpec copiedTemplate = objectMapper.readValue(objectMapper.writeValueAsString(elasticJob.getSpec().getTemplate()), PodTemplateSpec.class);
-        copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + "config", objectMapper.writeValueAsString(toCloudJobConfigurationPOJO(elasticJob)));
+        copiedTemplate.getMetadata().getLabels().put(ELASTICJOB_DOMAIN + "app", elasticJob.getMetadata().getName());
+        copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_DOMAIN + "config", objectMapper.writeValueAsString(toCloudJobConfigurationPOJO(elasticJob)));
         for (int shardingItem = 0; shardingItem < elasticJob.getSpec().getShardingTotalCount(); shardingItem++) {
             ShardingContextPOJO shardingContext = new ShardingContextPOJO(new ShardingContext(elasticJob.getMetadata().getName(), "", elasticJob.getSpec().getShardingTotalCount(), elasticJob.getSpec().getJobParameter(), shardingItem, elasticJob.getSpec().getShardingItemParameters().getOrDefault("" + shardingItem, "")));
-            copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem, objectMapper.writeValueAsString(shardingContext));
+            copiedTemplate.getMetadata().getAnnotations().put(ELASTICJOB_DOMAIN + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem, objectMapper.writeValueAsString(shardingContext));
         }
         copiedTemplate.getSpec().getVolumes().add(new VolumeBuilder().withName("elasticjob")
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
@@ -164,7 +198,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
     
     private DownwardAPIVolumeFile mountShardingContext(int shardingItem) {
         return new DownwardAPIVolumeFileBuilder().withPath(shardingItem + "").withFieldRef(new ObjectFieldSelectorBuilder()
-                .withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_PREFIX + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem + "']").build()).build();
+                .withFieldPath("metadata.annotations['" + ELASTICJOB_DOMAIN + ELASTICJOB_SHARDING_CONTEXT_PREFIX + shardingItem + "']").build()).build();
     }
     
     @Override
