@@ -162,6 +162,8 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
                         .withItems(IntStream.range(0, elasticJob.getSpec().getShardingTotalCount()).mapToObj(this::mountShardingContext).collect(Collectors.toList()))
                         .addToItems(
+                                new DownwardAPIVolumeFileBuilder().withPath("pod-name").withFieldRef(
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.name").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("config").withFieldRef(
                                         new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_CONFIG + "']").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("sharding-item").withFieldRef(

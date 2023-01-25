@@ -17,12 +17,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class KubernetesCloudJobExecutor {
     
     private static final String CONFIG_FILE = "/etc/elasticjob/config";
     
     private static final String SHARDING_ITEM_FILE = "/etc/elasticjob/sharding-item";
+    
+    private static final String POD_NAME_FILE = "/etc/elasticjob/pod-name";
+    
+    private static final Pattern STATEFUL_SET_POD_NAME_PATTERN = Pattern.compile("[a-z0-9]([-a-z0-9]*[a-z0-9])?-(?<podIndex>\\d+)");
     
     private static final String SHARDING_CONTEXT_DIR = "/etc/elasticjob/sharding-context";
     
@@ -45,9 +51,20 @@ public final class KubernetesCloudJobExecutor {
     }
     
     private ShardingContexts loadShardingContexts(JobConfiguration jobConfiguration) {
-        int shardingItem = Integer.parseInt(readFile(SHARDING_ITEM_FILE));
+        int shardingItem = getShardingItem();
         ShardingContext shardingContext = YamlEngine.unmarshal(readFile(SHARDING_CONTEXT_DIR + "/" + shardingItem), ShardingContextPOJO.class).toShardingContext();
         return new ShardingContexts("", jobConfiguration.getJobName(), jobConfiguration.getShardingTotalCount(), jobConfiguration.getJobParameter(), Collections.singletonMap(shardingItem, shardingContext.getShardingParameter()));
+    }
+    
+    private int getShardingItem() {
+        String shardingItemFileContent = readFile(SHARDING_ITEM_FILE);
+        if (!shardingItemFileContent.isBlank()) {
+            return Integer.parseInt(shardingItemFileContent);
+        }
+        String podNameFileContent = readFile(POD_NAME_FILE);
+        Matcher matcher = STATEFUL_SET_POD_NAME_PATTERN.matcher(podNameFileContent);
+        Preconditions.checkState(matcher.matches(), "Could not determine sharding item from sharding-item or pod-name file");
+        return Integer.parseInt(matcher.group("podIndex"));
     }
     
     private String readFile(String filePath) {
@@ -56,7 +73,7 @@ public final class KubernetesCloudJobExecutor {
         try (FileInputStream fileInputStream = new FileInputStream(configFile)) {
             return new String(fileInputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException ex) {
-            throw new RuntimeException(String.format("Failed to load job configuration from file [%s]. Please check its content.", filePath), ex);
+            throw new IllegalStateException(String.format("Failed to load job configuration from file [%s]. Please check its content.", filePath), ex);
         }
     }
     
