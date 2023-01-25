@@ -1,5 +1,9 @@
 package icu.wwj.elasticjob.reconciler;
 
+import com.cronutils.mapper.CronMapper;
+import com.cronutils.model.CronType;
+import com.cronutils.model.definition.CronDefinitionBuilder;
+import com.cronutils.parser.CronParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import icu.wwj.elasticjob.api.ElasticJob;
@@ -105,7 +109,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                         .withLabels(elasticJob.getMetadata().getLabels())
                         .build())
                 .withSpec(new CronJobSpecBuilder()
-                        .withSchedule(elasticJob.getSpec().getCron())
+                        .withSchedule(convertToUnixCron(elasticJob.getSpec().getCron()))
                         .withSuspend(elasticJob.getSpec().isDisabled())
                         .withJobTemplate(new JobTemplateSpecBuilder()
                                 .withSpec(new JobSpecBuilder()
@@ -119,6 +123,11 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                 .build();
         result.addOwnerReference(elasticJob);
         return result;
+    }
+    
+    private String convertToUnixCron(String cron) {
+        CronParser cronParser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+        return CronMapper.fromQuartzToUnix().map(cronParser.parse(cron)).asString();
     }
     
     private UpdateControl<ElasticJob> createStatefulSet(ElasticJob elasticJob) {
@@ -162,12 +171,12 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
                 .withDownwardAPI(new DownwardAPIVolumeSourceBuilder()
                         .withItems(IntStream.range(0, elasticJob.getSpec().getShardingTotalCount()).mapToObj(this::mountShardingContext).collect(Collectors.toList()))
                         .addToItems(
-                                new DownwardAPIVolumeFileBuilder().withPath("pod-name").withFieldRef(
-                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.name").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("config").withFieldRef(
                                         new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['" + ELASTICJOB_ANNOTATION_CONFIG + "']").build()).build(),
                                 new DownwardAPIVolumeFileBuilder().withPath("sharding-item").withFieldRef(
-                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['batch.kubernetes.io/job-completion-index']").build()).build()
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.annotations['batch.kubernetes.io/job-completion-index']").build()).build(),
+                                new DownwardAPIVolumeFileBuilder().withPath("statefulset-pod-name").withFieldRef(
+                                        new ObjectFieldSelectorBuilder().withFieldPath("metadata.labels['statefulset.kubernetes.io/pod-name']").build()).build()
                         )
                         .build())
                 .build());

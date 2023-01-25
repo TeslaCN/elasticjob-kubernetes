@@ -1,6 +1,5 @@
 package icu.wwj.elasticjob.sdk.daemon;
 
-import icu.wwj.elasticjob.sdk.executor.KubernetesCloudJobFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.elasticjob.api.ElasticJob;
@@ -22,7 +21,6 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.plugins.management.ShutdownHookPlugin;
 
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 public class DaemonJobScheduler {
@@ -42,9 +40,9 @@ public class DaemonJobScheduler {
     private final JobFacade jobFacade;
     
     /**
-     * Init the job.
+     * Schedule the job.
      */
-    public void init() {
+    public void schedule() {
         JobDetail jobDetail = JobBuilder.newJob(DaemonJob.class).withIdentity(jobConfig.getJobName()).build();
         jobDetail.getJobDataMap().put(ELASTIC_JOB_DATA_MAP_KEY, elasticJob);
         jobDetail.getJobDataMap().put(ELASTIC_JOB_TYPE_DATA_MAP_KEY, elasticJobType);

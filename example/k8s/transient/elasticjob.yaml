@@ -21,7 +21,8 @@ spec:
     2: b
     0: c
   jobParameter: 'common parameter'
-  cron: '* * * * ?'
+  # Transient job only support minute level cron. The second expression would be ignored.
+  cron: '0 * * * * ?'
   misfire: true
   description: ''
   props:

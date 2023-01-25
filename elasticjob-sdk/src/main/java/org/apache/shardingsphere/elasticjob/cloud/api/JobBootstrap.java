@@ -9,10 +9,10 @@ import org.apache.shardingsphere.elasticjob.api.ElasticJob;
 public final class JobBootstrap {
    
     public static void execute(final ElasticJob elasticJob) {
-        new KubernetesCloudJobExecutor(elasticJob).execute();
+        new KubernetesCloudJobExecutor().execute(elasticJob);
     }
     
     public static void execute(final String elasticJobType) {
-        new KubernetesCloudJobExecutor(elasticJobType).execute();
+        new KubernetesCloudJobExecutor().execute(elasticJobType);
     }
 }

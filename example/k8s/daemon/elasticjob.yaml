@@ -20,7 +20,7 @@ spec:
     2: b
     0: c
   jobParameter: 'common parameter'
-  cron: '* * * * ?'
+  cron: '0/30 * * * * ?'
   misfire: true
   description: ''
   props:
