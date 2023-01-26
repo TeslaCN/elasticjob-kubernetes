@@ -1,2 +1,44 @@
 = ElasticJob on Kubernetes
 
+== Getting Start
+
+TODO
+
+== Basic Concept
+
+*ElasticJob on Kubernetes* vs *ElasticJob Cloud 3.0 (Mesos)*
+
+|===
+| ElasticJob concept | ElasticJob Kubernetes | ElasticJob Mesos
+| API | CRD elasticjobs.icu.wwj.elasticjob | Restful API
+| Scheduler | ElasticJob Operator | base on Mesos Scheduler & Executor
+| Application | An Image | A Tarball
+|===
+
+Kubernetes resource:
+|===
+| Job Execution Type | DAEMON | TRANSIENT
+| ElasticJob with CRON | ✅ StatefulSet | ✅ CronJob
+| ElasticJob without CRON | ❌ StatefulSet | ❌ Job
+|===
+
+* ✅ means supported
+* ❌ means unsupported for now
+
+== Limitations
+
+[.lead]
+Transient cron job (Kubernetes CronJob) only support UNIX cron. The second expression would be ignored.
+
+For example, set the following cron in ElasticJob CR:
+[source,yaml]
+....
+  jobExecutionType: TRANSIENT
+  cron: '0/15 * * * * ?'
+....
+
+The actual cron of CronJob would be:
+....
+* * * * ?
+....
+
