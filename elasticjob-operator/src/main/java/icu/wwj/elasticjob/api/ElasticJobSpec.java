@@ -4,6 +4,7 @@ import io.fabric8.generator.annotation.Min;
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.fabric8.kubernetes.model.annotation.PrinterColumn;
+import io.fabric8.kubernetes.model.annotation.SpecReplicas;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +27,7 @@ public class ElasticJobSpec {
     @Required
     @Min(1)
     @PrinterColumn(name = "SHARDING TOTAL COUNT")
+    @SpecReplicas
     private int shardingTotalCount;
     
     @PrinterColumn

@@ -89,16 +89,18 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         ElasticJobStatus status = new ElasticJobStatus();
         status.setStatus(cronJob.getStatus().getActive().isEmpty() ? "Staging" : "Running");
         status.setLastScheduleTime(cronJob.getStatus().getLastScheduleTime());
+        status.setShardingTotalCount(elasticJob.getSpec().getShardingTotalCount());
         elasticJob.setStatus(status);
-        return UpdateControl.updateStatus(elasticJob);
+        return UpdateControl.patchStatus(elasticJob);
     }
     
     private UpdateControl<ElasticJob> createCronJob(final ElasticJob elasticJob) {
         kubernetesClient.batch().v1().cronjobs().resource(toCronJob(elasticJob)).createOrReplace();
         ElasticJobStatus status = new ElasticJobStatus();
         status.setStatus("Reconciled");
+        status.setShardingTotalCount(elasticJob.getSpec().getShardingTotalCount());
         elasticJob.setStatus(status);
-        return UpdateControl.updateStatus(elasticJob);
+        return UpdateControl.patchStatus(elasticJob);
     }
     
     private CronJob toCronJob(final ElasticJob elasticJob) {
@@ -135,6 +137,7 @@ public class ElasticJobReconciler implements EventSourceInitializer<ElasticJob>,
         kubernetesClient.apps().statefulSets().resource(statefulSet).createOrReplace();
         ElasticJobStatus status = new ElasticJobStatus();
         status.setStatus("Reconciled");
+        status.setShardingTotalCount(elasticJob.getSpec().getShardingTotalCount());
         elasticJob.setStatus(status);
         return UpdateControl.updateStatus(elasticJob);
     }
