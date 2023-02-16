@@ -1,6 +1,7 @@
 package icu.wwj.elasticjob;
 
 import icu.wwj.elasticjob.reconciler.ElasticJobReconciler;
+import icu.wwj.elasticjob.reconciler.ElasticJobTriggerReconciler;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.javaoperatorsdk.operator.Operator;
@@ -17,6 +18,7 @@ public class ElasticJobOperator {
         KubernetesClient client = new KubernetesClientBuilder().build();
         Operator operator = new Operator(client);
         operator.register(new ElasticJobReconciler(client));
+        operator.register(new ElasticJobTriggerReconciler(client));
         operator.start();
     }
 }

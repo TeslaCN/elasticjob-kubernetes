@@ -19,7 +19,7 @@ Kubernetes resource:
 |===
 | Job Execution Type | DAEMON | TRANSIENT
 | ElasticJob with CRON | ✅ StatefulSet | ✅ CronJob
-| ElasticJob without CRON | ❌ StatefulSet | ❌ Job
+| ElasticJob without CRON | ❌ StatefulSet | ✅ Job
 |===
 
 * ✅ means supported

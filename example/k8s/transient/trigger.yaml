@@ -1,0 +1,11 @@
+apiVersion: icu.wwj.elasticjob/v1alpha1
+kind: ElasticJobTrigger
+metadata:
+  name: hello-transient-job-no-cron
+  namespace: elasticjob-cloud
+spec:
+  shardingItemParameters: 
+    1: a
+    2: b
+    0: c
+  jobParameter: 'common parameter'
