@@ -1,8 +1,91 @@
 = ElasticJob on Kubernetes
 
-== Getting Start
+== Getting Started
+
+=== Implements Your ElasticJob
+
+[source,java]
+....
+import org.apache.shardingsphere.elasticjob.api.ShardingContext;
+import org.apache.shardingsphere.elasticjob.simple.job.SimpleJob;
+public class MyLogSimpleJob implements SimpleJob {
+    @Override
+    public void execute(final ShardingContext shardingContext) {
+        // Do what you want.
+    }
+}
+....
+
+=== Launch Your Job using ElasticJob-Cloud API
+[source,java]
+....
+import icu.wwj.elasticjob.example.job.MyLogSimpleJob;
+import org.apache.shardingsphere.elasticjob.cloud.api.JobBootstrap;
+
+public class Main {
+    public static void main(String[] args) {
+        JobBootstrap.execute(new MyLogSimpleJob());
+    }
+}
+....
+
+=== Build Image and Make Image Ready in Image Registry
+
+See example.
+
+=== Deploy ElasticJob Operator
 
 TODO
+
+=== Create ElasticJob CR
+
+See example.
+
+[source,bash]
+....
+kubectl apply -f https://raw.githubusercontent.com/TeslaCN/elasticjob-kubernetes/main/example/k8s/transient/elasticjob.yaml
+....
+
+[source,yaml]
+....
+apiVersion: icu.wwj.elasticjob/v1alpha1
+kind: ElasticJob
+metadata:
+  name: hello-transient-job
+  namespace: elasticjob-cloud
+spec:
+  template:
+    metadata:
+      labels:
+        app: elasticjob
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: job-container
+          imagePullPolicy: IfNotPresent
+          image: teslacn/elasticjob-kubernetes-example:latest
+  jobExecutionType: TRANSIENT
+  shardingTotalCount: 3
+  shardingItemParameters: 
+    1: a
+    2: b
+    0: c
+  jobParameter: 'common parameter'
+  # Transient job only support minute level cron. The second expression would be ignored.
+  cron: '0 * * * * ?'
+  misfire: true
+  description: ''
+  props:
+    a: b
+  disabled: false
+....
+
+=== Scale Job via kubectl
+
+[source,bash]
+....
+kubectl scale --replicas=5 -n elasticjob-cloud elasticjob/hello-transient-job
+....
 
 == Basic Concept
 
